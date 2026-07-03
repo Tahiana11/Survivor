@@ -22,7 +22,7 @@ class AlienContact(BaseModel):
     duration_minutes: int = Field(ge=1, le=1440)
     witness_count: int = Field(ge=1, le=100)
     message_received: Optional[str] = Field(default=None, max_length=500)
-    is_verified: bool = False
+    is_verified: bool = Field(default=False)
 
     @model_validator(mode="after")
     def verify_alien_contact(self) -> 'AlienContact':

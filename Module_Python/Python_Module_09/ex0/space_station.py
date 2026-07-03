@@ -12,7 +12,7 @@ class SpaceStation(BaseModel):
     power_level: float = Field(ge=0, le=100)
     oxygen_level: float = Field(ge=0, le=100)
     last_maintenance: datetime = Field(default_factory=datetime.now)
-    is_operational: bool = True
+    is_operational: bool = Field(default=True)
     notes: Optional[str] = None
 
 
