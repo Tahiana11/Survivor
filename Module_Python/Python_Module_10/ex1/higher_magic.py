@@ -35,10 +35,10 @@ def power_amplifier(
 
 def conditional_caster(
     condition: Callable[[str, int], bool],
-    spell_fn: Callable[[str, int], str],
+    spell: Callable[[str, int], str],
 ) -> Callable[[str, int], str]:
     return lambda target, power: (
-        spell_fn(target, power) if condition(target, power)
+        spell(target, power) if condition(target, power)
         else "Spell fizzled"
     )
 

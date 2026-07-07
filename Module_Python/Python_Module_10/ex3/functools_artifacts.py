@@ -59,7 +59,7 @@ def spell_dispatcher() -> Callable[[Any], str]:
         return f"{spells}"
 
     @dispatcher.register(list)
-    def _(spells: list[str]) -> str:
+    def _(spells: list[Any]) -> str:
         return f"{len(spells)} spells"
 
     return dispatcher
