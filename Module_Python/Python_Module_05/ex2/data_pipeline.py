@@ -9,7 +9,7 @@ class DataProcessor(ABC):
         self._rank: int = 0
 
     @abstractmethod
-    def valide(self, data: Any) -> bool:
+    def validate(self, data: Any) -> bool:
         pass
 
     @abstractmethod
@@ -20,14 +20,10 @@ class DataProcessor(ABC):
     def print_stats(self) -> None:
         pass
 
-    def output(self, nb: int) -> list[tuple[int, str]]:
-        res: list[tuple[int, str]] = []
-        for _ in range(nb):
-            if not self._storage:
-                break
-
-            res.append(self._storage.pop(0))
-        return res
+    def output(self) -> tuple[int, str]:
+        if not self._storage:
+            return (-1, "No data")
+        return self._storage.pop(0)
 
 
 class NumericProcessor(DataProcessor):
@@ -35,7 +31,10 @@ class NumericProcessor(DataProcessor):
         self.count: int = 0
         super().__init__()
 
-    def valide(self, data: Any) -> bool:
+    def validate(self, data: Any) -> bool:
+        if isinstance(data, bool):
+            return False
+
         if isinstance(data, (int, float)):
             return True
 
@@ -44,15 +43,14 @@ class NumericProcessor(DataProcessor):
 
         return False
 
-    def ingest(self, data: Any) -> None:
-        if not self.valide(data):
+    def ingest(self, data: int | float | list[float | int]) -> None:
+        if not self.validate(data):
             raise ValueError("Improper numeric data")
 
         def add_num_to_storage(val: Any) -> None:
             self.count += 1
             self._rank += 1
-            f = float(val)
-            stored = str(int(f)) if f == int(f) else str(f)
+            stored = str(int(val)) if val == int(val) else str(val)
             self._storage.append((self._rank, stored))
 
         if isinstance(data, (int, float)):
@@ -73,7 +71,7 @@ class TextProcessor(DataProcessor):
         self.count: int = 0
         super().__init__()
 
-    def valide(self, data: Any) -> bool:
+    def validate(self, data: Any) -> bool:
         if isinstance(data, str):
             return True
 
@@ -82,8 +80,8 @@ class TextProcessor(DataProcessor):
 
         return False
 
-    def ingest(self, data: Any) -> None:
-        if not self.valide(data):
+    def ingest(self, data: str | list[str]) -> None:
+        if not self.validate(data):
             raise ValueError("Improper text data")
 
         def add_text_to_storage(val: Any) -> None:
@@ -110,7 +108,7 @@ class LogProcessor(DataProcessor):
         self.count: int = 0
         super().__init__()
 
-    def is_valide_dict(self, d: Any) -> bool:
+    def is_validate_dict(self, d: Any) -> bool:
         if not isinstance(d, dict) or not d:
             return False
 
@@ -118,30 +116,26 @@ class LogProcessor(DataProcessor):
             isinstance(k, str) and isinstance(v, str) for k, v in d.items()
         )
 
-    def valide(self, data: Any) -> bool:
+    def validate(self, data: Any) -> bool:
         if isinstance(data, dict):
-            return self.is_valide_dict(data)
+            return self.is_validate_dict(data)
 
         if isinstance(data, list):
-            return all(self.is_valide_dict(i) for i in data)
+            return all(self.is_validate_dict(i) for i in data)
 
         return False
 
-    def ingest(self, data: Any) -> None:
-        if not self.valide(data):
+    def ingest(self, data: dict[str, str] | list[dict[str, str]]) -> None:
+        if not self.validate(data):
             raise ValueError("Improper log data")
 
-        def add_log_to_storage(d: Any) -> None:
-            self.count += 1
-            self._rank += 1
-            log_str = f"{d.get('log_level', '')}: {d.get('log_message', '')}"
-            self._storage.append((self._rank, log_str))
+        logs: list[dict[str, str]] = [data] if isinstance(data, dict) else data
 
-        if isinstance(data, dict):
-            add_log_to_storage(data)
-        else:
-            for log in data:
-                add_log_to_storage(log)
+        for log in logs:
+            self._rank += 1
+            self.count += 1
+            log_str = ": ".join(str(value) for value in log.values())
+            self._storage.append((self._rank, log_str))
 
     def print_stats(self) -> None:
         print(
@@ -185,7 +179,7 @@ class DataStream:
         for i in stream:
             processed = False
             for proc in self._processor:
-                if proc.valide(i):
+                if proc.validate(i):
                     proc.ingest(i)
                     processed = True
 
@@ -205,14 +199,14 @@ class DataStream:
             pro.print_stats()
 
     def output_pipeline(self, nb: int, plugin: ExportPlugin) -> None:
+        res: list[tuple[int, str]] = []
         for p in self._processor:
-            data = p.output(nb)
-            if data:
-                plugin.process_output(data)
+            for _ in range(nb):
+                res.append(p.output())
+            plugin.process_output(res)
 
 
 def main() -> None:
-    print("=== Code Nexus - Data Pipeline ===\n")
     print("Initialize Data Stream...\n")
 
     pro = DataStream()
@@ -284,4 +278,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    print("=== Code Nexus - Data Pipeline ===\n")
+    try:
+        main()
+    except Exception as e:
+        print("Got error:", e)

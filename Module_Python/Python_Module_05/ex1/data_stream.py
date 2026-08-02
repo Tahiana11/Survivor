@@ -9,7 +9,7 @@ class DataProcessor(ABC):
         self._rank: int = 0
 
     @abstractmethod
-    def valide(self, data: Any) -> bool:
+    def validate(self, data: Any) -> bool:
         pass
 
     @abstractmethod
@@ -22,7 +22,7 @@ class DataProcessor(ABC):
 
     def output(self) -> tuple[int, str]:
         if not self._storage:
-            raise IndexError("No data available in storage")
+            return (-1, "No data")
         return self._storage.pop(0)
 
 
@@ -31,7 +31,10 @@ class NumericProcessor(DataProcessor):
         self.count: int = 0
         super().__init__()
 
-    def valide(self, data: Any) -> bool:
+    def validate(self, data: Any) -> bool:
+        if isinstance(data, bool):
+            return False
+
         if isinstance(data, (int, float)):
             return True
 
@@ -40,14 +43,14 @@ class NumericProcessor(DataProcessor):
 
         return False
 
-    def ingest(self, data: Any) -> None:
-        if not self.valide(data):
+    def ingest(self, data: int | float | list[int | float]) -> None:
+        if not self.validate(data):
             raise ValueError("Improper numeric data")
 
         def add_num_to_storage(val: Any) -> None:
             self.count += 1
             self._rank += 1
-            self._storage.append((self._rank, str(float(val))))
+            self._storage.append((self._rank, str(val)))
 
         if isinstance(data, (int, float)):
             add_num_to_storage(data)
@@ -67,7 +70,7 @@ class TextProcessor(DataProcessor):
         self.count: int = 0
         super().__init__()
 
-    def valide(self, data: Any) -> bool:
+    def validate(self, data: Any) -> bool:
         if isinstance(data, str):
             return True
 
@@ -76,8 +79,8 @@ class TextProcessor(DataProcessor):
 
         return False
 
-    def ingest(self, data: Any) -> None:
-        if not self.valide(data):
+    def ingest(self, data: str | list[str]) -> None:
+        if not self.validate(data):
             raise ValueError("Improper text data")
 
         def add_text_to_storage(val: Any) -> None:
@@ -104,7 +107,7 @@ class LogProcessor(DataProcessor):
         self.count: int = 0
         super().__init__()
 
-    def is_valide_dict(self, d: Any) -> bool:
+    def is_valid_dict(self, d: Any) -> bool:
         if not isinstance(d, dict):
             return False
 
@@ -114,30 +117,26 @@ class LogProcessor(DataProcessor):
 
         return False
 
-    def valide(self, data: Any) -> bool:
+    def validate(self, data: Any) -> bool:
         if isinstance(data, dict):
-            return self.is_valide_dict(data)
+            return self.is_valid_dict(data)
 
         if isinstance(data, list):
-            return all(self.is_valide_dict(i) for i in data)
+            return all(self.is_valid_dict(i) for i in data)
 
         return False
 
-    def ingest(self, data: Any) -> None:
-        if not self.valide(data):
+    def ingest(self, data: dict[str, str] | list[dict[str, str]]) -> None:
+        if not self.validate(data):
             raise ValueError("Improper numeric data")
 
-        def add_log_to_storage(d: Any) -> None:
+        logs: list[dict[str, str]] = [data] if isinstance(data, dict) else data
+
+        for log in logs:
             self.count += 1
             self._rank += 1
-            log_str = f"{d.get('log_level', '')}: {d.get('log_message', '')}"
+            log_str = ": ".join(str(value) for value in log.values())
             self._storage.append((self._rank, log_str))
-
-        if isinstance(data, dict):
-            add_log_to_storage(data)
-        else:
-            for log in data:
-                add_log_to_storage(log)
 
     def print_stats(self) -> None:
         print(
@@ -156,7 +155,7 @@ class DataStream:
         for i in stream:
             processed = False
             for proc in self._processor:
-                if proc.valide(i):
+                if proc.validate(i):
                     proc.ingest(i)
                     processed = True
 
@@ -177,8 +176,6 @@ class DataStream:
 
 
 def main() -> None:
-    print("=== Code Nexus - Data Stream ===\n")
-
     pro = DataStream()
     print("Initialize Data Stream...")
 
@@ -231,4 +228,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    print("=== Code Nexus - Data Stream ===\n")
+    try:
+        main()
+    except Exception as e:
+        print("Got error:", e)

@@ -9,7 +9,7 @@ class DataProcessor(ABC):
         self._rank: int = 0
 
     @abstractmethod
-    def valide(self, data: Any) -> bool:
+    def validate(self, data: Any) -> bool:
         pass
 
     @abstractmethod
@@ -18,7 +18,7 @@ class DataProcessor(ABC):
 
     def output(self) -> tuple[int, str]:
         if not self._storage:
-            raise IndexError("No data available in storage")
+            return (-1, "No data")
         return self._storage.pop(0)
 
 
@@ -26,7 +26,10 @@ class NumericProcessor(DataProcessor):
     def __init__(self) -> None:
         super().__init__()
 
-    def valide(self, data: Any) -> bool:
+    def validate(self, data: Any) -> bool:
+        if isinstance(data, bool):
+            return False
+
         if isinstance(data, (int, float)):
             return True
 
@@ -35,13 +38,13 @@ class NumericProcessor(DataProcessor):
 
         return False
 
-    def ingest(self, data: Any) -> None:
-        if not self.valide(data):
+    def ingest(self, data: int | float | list[int | float]) -> None:
+        if not self.validate(data):
             raise ValueError("Improper numeric data")
 
         def add_num_to_storage(val: Any) -> None:
             self._rank += 1
-            self._storage.append((self._rank, str(float(val))))
+            self._storage.append((self._rank, str(val)))
 
         if isinstance(data, (int, float)):
             add_num_to_storage(data)
@@ -54,7 +57,7 @@ class TextProcessor(DataProcessor):
     def __init__(self) -> None:
         super().__init__()
 
-    def valide(self, data: Any) -> bool:
+    def validate(self, data: Any) -> bool:
         if isinstance(data, str):
             return True
 
@@ -63,8 +66,8 @@ class TextProcessor(DataProcessor):
 
         return False
 
-    def ingest(self, data: Any) -> None:
-        if not self.valide(data):
+    def ingest(self, data: str | list[str]) -> None:
+        if not self.validate(data):
             raise ValueError("Improper text data")
 
         def add_text_to_storage(val: Any) -> None:
@@ -83,7 +86,7 @@ class LogProcessor(DataProcessor):
     def __init__(self) -> None:
         super().__init__()
 
-    def is_valide_dict(self, d: Any) -> bool:
+    def is_validate_dict(self, d: Any) -> bool:
         if not isinstance(d, dict):
             return False
 
@@ -93,40 +96,35 @@ class LogProcessor(DataProcessor):
 
         return False
 
-    def valide(self, data: Any) -> bool:
+    def validate(self, data: Any) -> bool:
         if isinstance(data, dict):
-            return self.is_valide_dict(data)
+            return self.is_validate_dict(data)
 
         if isinstance(data, list):
-            return all(self.is_valide_dict(i) for i in data)
+            return all(self.is_validate_dict(i) for i in data)
 
         return False
 
-    def ingest(self, data: Any) -> None:
-        if not self.valide(data):
+    def ingest(self, data: dict[str, str] | list[dict[str, str]]) -> None:
+        if not self.validate(data):
             raise ValueError("Improper numeric data")
 
-        def add_log_to_storage(d: Any) -> None:
-            self._rank += 1
-            log_str = f"{d.get('log_level', '')}: {d.get('log_message', '')}"
-            self._storage.append((self._rank, log_str))
+        logs: list[dict[str, str]] = [data] if isinstance(data, dict) else data
 
-        if isinstance(data, dict):
-            add_log_to_storage(data)
-        else:
-            for log in data:
-                add_log_to_storage(log)
+        for log in logs:
+            self._rank += 1
+            log_str = ": ".join(str(value) for value in log.values())
+            self._storage.append((self._rank, log_str))
 
 
 def main() -> None:
-    print("=== Code Nexus - Data Processor ===\n")
 
     print("Testing Numeric Processor...")
     num = NumericProcessor()
-    numeric = [0.2, 10, 'hello']
+    numeric = [0.1, 10, "hello"]
     for n in numeric:
-        res = num.valide(n)
-        print(f" Trying to validate input '{n}': {res}")
+        res = num.validate(n)
+        print(f" Trying to valid input '{n}': {res}")
 
     f: str = "foo"
     print(f" Test invalid ingestion of string"
@@ -135,19 +133,19 @@ def main() -> None:
         num.ingest(f)
     except ValueError as e:
         print(f" Got exception: {e}")
-    data_num: list[int] = [x + 1 for x in range(5)]
+    data_num: list[int | float] = [1, 2, 3, 4, 5]
     print(f" Processing data: {data_num}")
     num.ingest(data_num)
     values: int = 3
     print(f" Extracting {values} values...")
     for i in range(values):
         rank, val = num.output()
-        print(f" Numeric value {i}: {int(float(val))}")
+        print(f" Numeric value {rank}: {val}")
 
     print("\nTesting Text Processor...")
     txt = TextProcessor()
     t: str = "42"
-    print(f" Trying to valid input '{t}': {txt.valide(t)}")
+    print(f" Trying to valid input '{t}': {txt.validate(t)}")
     data_txt: list[str] = ["Hello", "Nexus", "World"]
     print(f" Processing data: {data_txt}")
     txt.ingest(data_txt)
@@ -160,16 +158,10 @@ def main() -> None:
     print("\nTesting Log Processor...")
     log = LogProcessor()
     l: str = "Hello"
-    print(f" Trying to valide input '{l}': {log.valide(l)}")
+    print(f" Trying to valid input '{l}': {log.validate(l)}")
     d: list[dict[str, str]] = [
-        {
-            'log_level': 'NOTICE',
-            'log_message': 'Connection to server'
-        },
-        {
-            'log_level': 'ERROR',
-            'log_message': 'Unauthorized access!!'
-        }
+        {"log_level": "NOTICE", "log_message": "Connection to server"},
+        {"log_level": "ERROR", "log_message": "Unauthorized access!!"},
     ]
     print(f" Processing data: {d}")
     log.ingest(d)
@@ -181,4 +173,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    print("=== Code Nexus - Data Processor ===\n")
+    try:
+        main()
+    except Exception as e:
+        print("Got error:", e)
