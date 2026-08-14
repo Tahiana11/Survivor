@@ -23,35 +23,39 @@ def power_validator(min_power: int) -> Callable[..., Any]:
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @functools.wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            if len(args) > 2 and isinstance(args[0], MageGuild):
-                power = args[2]
-            elif len(args) > 1:
-                power = args[0]
+            power = kwargs.get("power")
 
-            if power >= min_power:
-                return func(*args, **kwargs)
+            if power is None and args:
+                if len(args) > 1 and not isinstance(args[0], (int, float)):
+                    power = args[1]
+                else:
+                    power = args[0]
 
-            else:
-                return "Insufficient power for this spell"
+            if power is not None and isinstance(power, (int, float)):
+                if power >= min_power:
+                    return func(*args, **kwargs)
+
+            return "Insufficient power for this spell"
 
         return wrapper
+
     return decorator
 
 
-def retry_spell(max_attemps: int) -> Callable[..., Any]:
+def retry_spell(max_attempts: int) -> Callable[..., Any]:
     def retry_decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @functools.wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            for attemps in range(1, max_attemps + 1):
+            for attempts in range(1, max_attempts + 1):
                 try:
                     return func(*args, **kwargs)
 
                 except Exception:
-                    return ("Spell failed, retrying... "
-                            f"(attempt {attemps}/{max_attemps})")
+                    print("Spell failed, retrying... "
+                          f"(attempt {attempts}/{max_attempts})")
 
-            return ("Spell casting failed after "
-                    f"{max_attemps} attemps")
+            return (f"Spell casting failed after"
+                    f"{max_attempts} attempts")
 
         return wrapper
     return retry_decorator
@@ -79,7 +83,7 @@ def heal(power: int, target: str) -> str:
     return f"Heal restores {target} for {power} HP"
 
 
-@retry_spell(max_attemps=4)
+@retry_spell(max_attempts=4)
 def spell() -> str:
     if random.random() < 0.2:
         raise Exception("The spell missed its target!")

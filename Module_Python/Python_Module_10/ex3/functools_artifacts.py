@@ -37,7 +37,7 @@ def partial_enchanter(
     }
 
 
-@functools.lru_cache(maxsize=1)
+@functools.lru_cache(maxsize=None)
 def memoized_fibonacci(n: int) -> int:
     if n < 2:
         return n
@@ -48,7 +48,7 @@ def memoized_fibonacci(n: int) -> int:
 def spell_dispatcher() -> Callable[[Any], str]:
     @functools.singledispatch
     def dispatcher(spells: Any) -> str:
-        return "Unknwon spell type"
+        return "Unknown spell type"
 
     @dispatcher.register
     def _(spells: int) -> str:
@@ -76,7 +76,7 @@ def main() -> None:
     print("\nTesting memoized fibonacci...")
     print("Fib(0):", memoized_fibonacci(0))
     print("Fib(1):", memoized_fibonacci(1))
-    print("Fib(10):", memoized_fibonacci(10))
+    print("Fib(10):", memoized_fibonacci(5))
     print("Fib(15):", memoized_fibonacci(15))
 
     print("\nTesting spell dispatcher...")
@@ -85,6 +85,12 @@ def main() -> None:
     print("Enchantment:", dispatcher("Fireball"))
     print("Multi-cast:", dispatcher(["Fireball", "Ice", "Wind"]))
     print(dispatcher(10.8))
+
+    print("\nTesting partial enchatment...")
+    enchanters = partial_enchanter(enchantment)
+    fire_spell = enchanters["fire"]
+    result_fire = fire_spell("Sword")
+    print("Fire:", result_fire)
 
 
 if __name__ == "__main__":

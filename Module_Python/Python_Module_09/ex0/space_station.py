@@ -8,12 +8,12 @@ import json
 class SpaceStation(BaseModel):
     station_id: str = Field(min_length=3, max_length=10)
     name: str = Field(min_length=1, max_length=50)
-    crew_size: int = Field(ge=0, le=20)
-    power_level: float = Field(ge=0, le=100)
-    oxygen_level: float = Field(ge=0, le=100)
+    crew_size: int = Field(ge=1, le=20)
+    power_level: float = Field(ge=0.0, le=100.0)
+    oxygen_level: float = Field(ge=0.0, le=100.0)
     last_maintenance: datetime = Field(default_factory=datetime.now)
     is_operational: bool = Field(default=True)
-    notes: Optional[str] = None
+    notes: Optional[str] = Field(default=None, max_length=200)
 
 
 def main() -> None:
@@ -46,7 +46,7 @@ def main() -> None:
     except ValidationError as e:
         print(e.errors()[0]["msg"])
 
-    except FileNotFoundError as e:
+    except FileNotFoundError:
         print(
             "Please download and compile data_exporter.py to obtain"
             " the folder containing the files for testing."

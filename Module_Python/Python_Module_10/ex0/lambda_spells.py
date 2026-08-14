@@ -13,14 +13,14 @@ def power_filter(
 
 
 def spell_transformer(spells: list[str]) -> list[str]:
-    return list(map(lambda spell: " * " + spell + " * ", spells))
+    return list(map(lambda spell: "* " + spell + " *", spells))
 
 
 def mage_stats(mages: list[dict[str, Any]]) -> dict[str, Any]:
     max_power = max(mages, key=lambda mage: mage["power"])
     min_power = min(mages, key=lambda mage: mage["power"])
     power = list(map(lambda m: m["power"], mages))
-    avg_power = sum(power) / len(power)
+    avg_power = sum(power) / len(power) if power else 0.0
     return {
             "max_power": max_power["power"],
             "min_power": min_power["power"],
@@ -32,7 +32,7 @@ def main() -> None:
     artifacts: list[dict[str, Any]] = [
         {'name': 'Wind Cloak', 'power': 63, 'type': 'focus'},
         {'name': 'Shadow Blade', 'power': 66, 'type': 'weapon'},
-        {'name': 'Earth Shield', 'power': 93, 'type': 'weapon'},
+        {'name': 'Earth Shield', 'power': 30, 'type': 'weapon'},
         {'name': 'Shadow Blade', 'power': 70, 'type': 'weapon'}
     ]
     artifact_sorted = artifact_sorter(artifacts)
@@ -50,12 +50,10 @@ def main() -> None:
     print("Testing power filter...")
     mages: list[dict[str, Any]] = [
         {"name": "Morgan", "power": 58, "element": "wind"},
-        {"name": "Phoenix", "power": 56, "element": "lightning"},
         {"name": "Rowan", "power": 99, "element": "wind"},
-        {"name": "Rowan", "power": 75, "element": "water"},
         {"name": "Phoenix", "power": 60, "element": "lightning"},
     ]
-    power: list[dict[str, Any]] = power_filter(mages, 90)
+    power: list[dict[str, Any]] = power_filter(mages, 60)
     print("List of powerful Mages:")
     for p in power:
         print(" - ", p["name"])

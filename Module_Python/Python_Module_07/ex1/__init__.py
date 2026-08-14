@@ -1,4 +1,4 @@
-from ex1.factory import HealingCreatureFactory, TransformCreatureFactory
+from .factory import HealingCreatureFactory, TransformCreatureFactory
 
 
 __all__ = ["HealingCreatureFactory", "TransformCreatureFactory"]

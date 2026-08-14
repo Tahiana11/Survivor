@@ -29,8 +29,10 @@ class AlienContact(BaseModel):
         if not self.contact_id.startswith('AC'):
             raise ValueError("The contact ID must begin with 'AC'")
 
-        if self.contact_type == ContactType.PHYSICAL and not self.is_verified:
-            raise ValueError("Physical contact reports must be verified.")
+        if self.contact_type == ContactType.PHYSICAL:
+            if self.is_verified is False:
+                raise ValueError("Physical contact "
+                                 "reports must be verified.")
 
         if self.contact_type == ContactType.TELEPATHIC \
                 and self.witness_count < 3:
@@ -62,7 +64,7 @@ def main() -> None:
         print("/10")
         print("Duration:", alien.duration_minutes, "minutes")
         print("Witness:", alien.witness_count)
-        print("Messsage:", alien.message_received)
+        print("Message:", alien.message_received)
 
         alien = AlienContact(**data1[1])
         print("Type:", alien.contact_type.value)
